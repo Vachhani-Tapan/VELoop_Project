@@ -1,0 +1,59 @@
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
+:root {
+  /* Colors */
+  --color-bg-base: #0f091a;
+  --color-bg-surface: #1a112c;
+  --color-primary: #8a2be2;
+  --color-primary-hover: #9b4dff;
+  --color-accent: #ffd700;
+  --color-accent-hover: #ffe44d;
+  --color-text-main: #ffffff;
+  --color-text-muted: #a39eb8;
+  --color-success: #00d26a;
+  --color-error: #f44336;
+
+  /* Typography */
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  /* Layout & UI */
+  --ui-radius: 16px;
+  --ui-radius-sm: 8px;
+  --ui-radius-lg: 24px;
+  
+  /* Glassmorphism Tokens */
+  --ui-glass-bg: rgba(26, 17, 44, 0.6);
+  --ui-glass-border: rgba(255, 255, 255, 0.08);
+  --ui-glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+  background-color: var(--color-bg-base);
+  color: var(--color-text-main);
+  /* Smooth scrolling for anchor links */
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Base resets & utilities overriding bootstrap defaults */
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Reusable Glassmorphism Utility Class */
+.glass-panel {
+  background: var(--ui-glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--ui-glass-border);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-glass-shadow);
+}
