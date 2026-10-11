@@ -1,76 +1,66 @@
+// src/components/DailyStreak/ClaimModal.jsx
+// ─────────────────────────────────────────────────────────────────────────────
+// Claim confirmation and engagement modal.
+// Disables action buttons during in-flight requests to prevent double submissions.
+// ─────────────────────────────────────────────────────────────────────────────
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import CpaDemo from './CpaDemo';
-import { claimStreak } from '../../services/streakApi';
 
-export default function ClaimModal({ day, onClose, onSuccess }) {
-  const [phase, setPhase] = useState('cpa'); // 'cpa' | 'claiming' | 'error'
-  const [errorMsg, setErrorMsg] = useState('');
+export default function ClaimModal({ day, claiming, onClose, onConfirm }) {
+  const [phase, setPhase] = useState('cpa'); // 'cpa' | 'claiming'
 
   const handleCpaComplete = async () => {
     setPhase('claiming');
     try {
-      const newState = await claimStreak(day);
-      onSuccess(newState);
-    } catch (err) {
-      setPhase('error');
-      // Extract error message as per A8 mapping
-      setErrorMsg(err.response?.data?.message || err.message || 'Unable to process your reward.');
+      await onConfirm();
+    } catch {
+      setPhase('cpa');
     }
   };
 
   const modalContent = (
-    <div style={{
-      position: 'fixed',
-      top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(0,0,0,0.8)',
-      backdropFilter: 'blur(4px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000
-    }}>
-      <div style={{
-        background: 'var(--color-bg-surface)',
-        padding: '2rem',
-        borderRadius: 'var(--ui-radius)',
-        maxWidth: '400px',
-        width: '90%',
-        border: '1px solid var(--ui-glass-border)',
-        boxShadow: 'var(--ui-glass-shadow)',
-        animation: 'modalFadeIn 0.3s ease-out forwards'
-      }}>
-        {phase === 'cpa' && (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0, 0, 0, 0.8)',
+        backdropFilter: 'blur(4px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+      }}
+    >
+      <div
+        style={{
+          background: 'var(--color-bg-surface, #1e293b)',
+          padding: '2rem',
+          borderRadius: '16px',
+          maxWidth: '420px',
+          width: '90%',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
+          animation: 'modalFadeIn 0.3s ease-out forwards',
+          color: '#fff',
+        }}
+      >
+        {phase === 'cpa' && !claiming && (
           <CpaDemo onComplete={handleCpaComplete} onCancel={onClose} />
         )}
-        
-        {phase === 'claiming' && (
+
+        {(phase === 'claiming' || claiming) && (
           <div style={{ textAlign: 'center', padding: '2rem' }}>
-            <h3 style={{ marginBottom: '1rem' }}>Claiming Reward...</h3>
-            <div className="spinner-border text-primary" role="status">
+            <h4 style={{ marginBottom: '1.25rem' }}>Securing Your Reward...</h4>
+            <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
               <span className="visually-hidden">Loading...</span>
             </div>
-          </div>
-        )}
-
-        {phase === 'error' && (
-          <div style={{ textAlign: 'center' }}>
-            <h3 style={{ color: 'var(--color-error)', marginBottom: '1rem' }}>Oops!</h3>
-            <p>{errorMsg}</p>
-            <button 
-              onClick={onClose}
-              style={{
-                background: 'var(--color-primary)',
-                color: '#fff',
-                border: 'none',
-                padding: '0.5rem 1.5rem',
-                borderRadius: 'var(--ui-radius-sm)',
-                marginTop: '1rem',
-                cursor: 'pointer'
-              }}
-            >
-              Close
-            </button>
+            <p style={{ marginTop: '1.25rem', color: '#94a3b8', fontSize: '0.875rem' }}>
+              Recording transaction and verifying server timestamps.
+            </p>
           </div>
         )}
       </div>

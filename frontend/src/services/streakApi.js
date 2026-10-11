@@ -1,19 +1,25 @@
 // src/services/streakApi.js
-// All network calls to the daily-streak backend.
-// React components NEVER call fetch/axios directly — they go through here.
-// All values shown in the UI must come from these responses (backend is authoritative).
-
+// ─────────────────────────────────────────────────────────────────────────────
+// Centralized API layer for Daily Streak & Rewards feature.
+// React components NEVER invoke axios/fetch directly.
+// ─────────────────────────────────────────────────────────────────────────────
 import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
-// ─── Axios instance ──────────────────────────────────────────────────────────
-const api = axios.create({ baseURL: BASE_URL });
+const api = axios.create({
+  baseURL: BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-// Attach JWT on every request from localStorage
+// Attach JWT from localStorage on every request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
 
@@ -28,11 +34,11 @@ export async function login(email, password) {
   return data;
 }
 
-// ─── Streak ──────────────────────────────────────────────────────────────────
+// ─── Streak Endpoints ────────────────────────────────────────────────────────
 
 /**
  * GET /api/daily-streak
- * Returns full state: serverTime, streak, rewards[], wallet
+ * Returns full authoritative state: serverTime, streak, rewards[], wallet
  */
 export async function getStreak() {
   const { data } = await api.get('/daily-streak');
@@ -41,8 +47,7 @@ export async function getStreak() {
 
 /**
  * GET /api/daily-streak/status
- * Lightweight poll — used when countdown hits zero.
- * Returns serverTime, eligible, nextClaimAt, currentDay
+ * Authoritative poll endpoint called when countdown reaches zero.
  */
 export async function getStreakStatus() {
   const { data } = await api.get('/daily-streak/status');
@@ -50,19 +55,37 @@ export async function getStreakStatus() {
 }
 
 /**
- * POST /api/daily-streak/claim
- * dayHint is advisory — backend always re-derives the eligible day.
- * Returns full refreshed state (same shape as getStreak).
+ * GET /api/daily-streak/wallet
+ * Returns real-time wallet balances.
  */
-export async function claimStreak(dayHint) {
-  const { data } = await api.post('/daily-streak/claim', { day: dayHint });
+export async function getWallet() {
+  const { data } = await api.get('/daily-streak/wallet');
+  return data;
+}
+
+/**
+ * POST /api/daily-streak/claim
+ * Sends claim request. Client dayHint is advisory; backend derives eligible day.
+ */
+export async function claimStreak(dayHint = null, idempotencyKey = null) {
+  const headers = {};
+  if (idempotencyKey) {
+    headers['Idempotency-Key'] = idempotencyKey;
+  }
+  const payload = dayHint !== null ? { day: dayHint } : {};
+  const { data } = await api.post('/daily-streak/claim', payload, { headers });
   return data;
 }
 
 /**
  * GET /api/daily-streak/history?page=1&limit=10
+ * Paginated successful claims ledger.
  */
 export async function getHistory(page = 1, limit = 10) {
-  const { data } = await api.get('/daily-streak/history', { params: { page, limit } });
+  const { data } = await api.get('/daily-streak/history', {
+    params: { page, limit },
+  });
   return data;
 }
+
+export default api;

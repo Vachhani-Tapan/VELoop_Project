@@ -45,7 +45,12 @@ const streakCycleSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Compound index: quickly find the active cycle for a user
-streakCycleSchema.index({ userId: 1, status: 1 });
+// Unique partial index: exactly one ACTIVE cycle per user at the database level.
+// Prevents race conditions during initial cycle creation.
+streakCycleSchema.index(
+  { userId: 1, status: 1 },
+  { unique: true, partialFilterExpression: { status: 'ACTIVE' } }
+);
 
 module.exports = mongoose.model('StreakCycle', streakCycleSchema);
+

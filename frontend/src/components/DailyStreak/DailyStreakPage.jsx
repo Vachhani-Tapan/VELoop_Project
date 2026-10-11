@@ -1,5 +1,10 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { getStreak, register, login } from '../../services/streakApi';
+// src/components/DailyStreak/DailyStreakPage.jsx
+// ─────────────────────────────────────────────────────────────────────────────
+// Daily Streak Page — Presentation Layer.
+// All values (streak, day, reward, status, balance, timer) come strictly from API.
+// ─────────────────────────────────────────────────────────────────────────────
+import React, { useEffect, useRef } from 'react';
+import { useStreak } from '../../hooks/useStreak';
 import styles from './DailyStreak.module.css';
 
 // Subcomponents
@@ -16,35 +21,27 @@ import HowItWorks from './HowItWorks';
 import Testimonials from './Testimonials';
 
 export default function DailyStreakPage({ onLogout }) {
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState(null);
-  const [error, setError] = useState(null);
+  const {
+    data,
+    loading,
+    claiming,
+    error,
+    notification,
+    resetNotice,
+    claim,
+    refreshStatus,
+    clearNotification,
+    clearResetNotice,
+  } = useStreak(onLogout);
+
   const pageRef = useRef(null);
 
   useEffect(() => {
-    async function init() {
-      try {
-        const state = await getStreak();
-        setData(state);
-      } catch (err) {
-        console.error('Failed to initialize streak page:', err);
-        if (err.response?.status === 401) {
-          onLogout();
-        } else {
-          setError('Unable to load Daily Streak. Please try again later.');
-        }
-      } finally {
-        setLoading(false);
-      }
-    }
-    init();
-  }, [onLogout]);
-
-  useEffect(() => {
     if (!loading && data && window.gsap && pageRef.current) {
-      window.gsap.fromTo(pageRef.current, 
-        { opacity: 0, y: 30 }, 
-        { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }
+      window.gsap.fromTo(
+        pageRef.current,
+        { opacity: 0, y: 30 },
+        { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }
       );
     }
   }, [loading, data]);
@@ -57,11 +54,11 @@ export default function DailyStreakPage({ onLogout }) {
     );
   }
 
-  if (error) {
+  if (error && !data) {
     return (
       <div className={styles.container}>
-        <div className="alert alert-danger" role="alert">
-          {error}
+        <div className="alert alert-danger" role="alert" style={{ margin: '2rem' }}>
+          <strong>Error: </strong> {error}
         </div>
       </div>
     );
@@ -70,21 +67,60 @@ export default function DailyStreakPage({ onLogout }) {
   return (
     <>
       <BackgroundEffects />
-      <div className={styles.container} ref={pageRef} style={{ opacity: 0 }}>
+      <div className={styles.container} ref={pageRef} style={{ opacity: data ? 1 : 0 }}>
         <div className={styles.content}>
-          <StreakHeader wallet={data.wallet} onLogout={onLogout} />
-          <HeroBanner />
-          <StreakStats streak={data.streak} serverTime={data.serverTime} />
-          <UltimateReward streak={data.streak} rewards={data.rewards} />
-          <RewardGrid 
-            rewards={data.rewards} 
-            streak={data.streak} 
-            serverTime={data.serverTime} 
-            onStateRefresh={setData} 
-          />
-          <HowItWorks />
-          <Testimonials />
-          <WhyStreak />
+          {/* Streak Reset Alert Banner */}
+          {resetNotice && (
+            <div className="alert alert-warning alert-dismissible fade show" role="alert" style={{ margin: '1rem' }}>
+              <strong>Notice: </strong> {resetNotice}
+              <button
+                type="button"
+                className="btn-close"
+                aria-label="Close"
+                onClick={clearResetNotice}
+              />
+            </div>
+          )}
+
+          {/* Toast / Notification Banner */}
+          {notification && (
+            <div
+              className={`alert alert-${notification.type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`}
+              role="alert"
+              style={{ margin: '1rem' }}
+            >
+              <strong>{notification.title}: </strong> {notification.message}
+              <button
+                type="button"
+                className="btn-close"
+                aria-label="Close"
+                onClick={clearNotification}
+              />
+            </div>
+          )}
+
+          {data && (
+            <>
+              <StreakHeader wallet={data.wallet} onLogout={onLogout} />
+              <HeroBanner />
+              <StreakStats
+                streak={data.streak}
+                serverTime={data.serverTime}
+                onCountdownZero={refreshStatus}
+              />
+              <UltimateReward streak={data.streak} rewards={data.rewards} />
+              <RewardGrid
+                rewards={data.rewards}
+                streak={data.streak}
+                serverTime={data.serverTime}
+                claiming={claiming}
+                onClaim={claim}
+              />
+              <HowItWorks />
+              <Testimonials />
+              <WhyStreak />
+            </>
+          )}
         </div>
         <TrustFooter />
       </div>

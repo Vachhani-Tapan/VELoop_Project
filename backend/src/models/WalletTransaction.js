@@ -43,8 +43,10 @@ const walletTransactionSchema = new mongoose.Schema(
       default: null,
     },
     referenceId: {
-      type: String, // StreakClaim._id.toString() or other feature reference
+      type: String, // Deterministic idempotency key: e.g. STREAK-<cycleId>-<day>
       required: true,
+      unique: true,
+      index: true,
     },
     balanceBefore: {
       type: Number,

@@ -1,25 +1,53 @@
 // src/middleware/auth.js
+// ─────────────────────────────────────────────────────────────────────────────
 // JWT verification middleware.
-// userId is ALWAYS taken from the decoded token — never from body/query/params.
+// Extracts and verifies JWT from Authorization: Bearer <token>.
+// req.userId is strictly bound to the authenticated subject.
+// ─────────────────────────────────────────────────────────────────────────────
+'use strict';
+
 const jwt = require('jsonwebtoken');
+const { ERROR_CODES } = require('../config/constants');
 
 function auth(req, res, next) {
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
-    return res.status(401).json({ success: false, message: 'Please log in to continue.' });
+    return res.status(401).json({
+      success: false,
+      code: ERROR_CODES.UNAUTHORIZED,
+      message: 'Authentication required. Please log in to continue.',
+    });
   }
 
-  const token = header.slice(7); // strip "Bearer "
+  const token = header.slice(7).trim();
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      code: ERROR_CODES.UNAUTHORIZED,
+      message: 'Authentication token missing.',
+    });
+  }
+
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // Attach only userId — nothing else is needed downstream
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test-secret');
     req.userId = decoded.userId || decoded.id || decoded._id;
+
     if (!req.userId) {
-      return res.status(401).json({ success: false, message: 'Invalid token payload.' });
+      return res.status(401).json({
+        success: false,
+        code: ERROR_CODES.INVALID_TOKEN,
+        message: 'Invalid authentication token payload.',
+      });
     }
+
     next();
-  } catch {
-    return res.status(401).json({ success: false, message: 'Please log in to continue.' });
+  } catch (err) {
+    const code = err.name === 'TokenExpiredError' ? ERROR_CODES.INVALID_TOKEN : ERROR_CODES.UNAUTHORIZED;
+    return res.status(401).json({
+      success: false,
+      code,
+      message: 'Session expired or invalid. Please log in again.',
+    });
   }
 }
 

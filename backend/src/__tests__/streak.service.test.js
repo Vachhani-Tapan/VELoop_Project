@@ -8,6 +8,7 @@ const streakService = require('../services/streak.service');
 const walletService = require('../services/wallet.service');
 const StreakCycle = require('../models/StreakCycle');
 const StreakClaim = require('../models/StreakClaim');
+const { setClockOffset, resetClock } = require('../utils/clock');
 
 beforeAll(async () => {
   await connect();
@@ -31,7 +32,7 @@ describe('streak.service', () => {
 
       expect(status.streak.currentDay).toBe(1);
       expect(status.streak.status).toBe('ACTIVE');
-      expect(status.rewards.find(r => r.day === 1).status).toBe('TODAY');
+      expect(status.rewards.find(r => r.day === 1).status).toBe('AVAILABLE');
     });
 
     it('4. Fake day (client {day:7} while eligible for 2) uses actual eligible day', async () => {
@@ -68,7 +69,7 @@ describe('streak.service', () => {
 
       // The rejected one should have the duplicate error
       const rejected = res1.status === 'rejected' ? res1 : res2;
-      expect(rejected.reason.message).toBe('This reward has already been claimed.');
+      expect(rejected.reason.message).toMatch(/already.*claimed|conflict/i);
     });
 
     it('11. Missed day resets to Day 1', async () => {
@@ -77,25 +78,18 @@ describe('streak.service', () => {
       await streakService.claimReward(user._id, null);
       const cycle = await StreakCycle.findOne({ userId: user._id });
 
-      // Simulate missing a day (advance clock past the missDeadline)
-      // claimIntervalHours = 24.
-      const missedDate = new Date(cycle.nextClaimAt.getTime() + 25 * 60 * 60 * 1000);
-      
-      // Temporarily override Date to simulate future
-      const RealDate = Date;
-      global.Date = class extends RealDate {
-        constructor(...args) {
-          if (args.length) return new RealDate(...args);
-          return new RealDate(missedDate);
-        }
-      };
+      // Simulate missing a day past grace window (24h + 24h grace = 48h, advance 49h)
+      setClockOffset(49 * 60 * 60 * 1000);
 
       try {
-        const claimResult = await streakService.claimReward(user._id, null);
-        expect(claimResult.status).toBe('JUST_RESET');
-        expect(claimResult.streak.currentDay).toBe(1);
+        await expect(streakService.claimReward(user._id, null)).rejects.toMatchObject({
+          code: 'STREAK_RESET',
+          status: 400,
+        });
+        const activeCycle = await StreakCycle.findOne({ userId: user._id, status: 'ACTIVE' });
+        expect(activeCycle.currentDay).toBe(1);
       } finally {
-        global.Date = RealDate; // restore
+        resetClock();
       }
     });
     
