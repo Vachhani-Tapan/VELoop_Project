@@ -11,10 +11,10 @@ async function connectDB() {
     return;
   }
 
-  const uri = process.env.MONGO_URI;
+  const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
   if (!uri) {
-    console.error('[DB] MONGO_URI is not set in environment.');
-    throw new Error('MONGO_URI is not set in environment.');
+    console.error('[DB] MONGO_URI or MONGODB_URI is not set in environment.');
+    throw new Error('MONGO_URI or MONGODB_URI is not set in environment.');
   }
 
   try {

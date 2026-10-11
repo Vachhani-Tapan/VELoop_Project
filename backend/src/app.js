@@ -18,15 +18,16 @@ const app = express();
 app.use(helmet());
 
 // ─── CORS ───────────────────────────────────────────────────────────────────
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173')
-  .split(',')
-  .map((o) => o.trim());
+const defaultOrigins = ['http://localhost:5173', 'https://ve-loop-project.vercel.app'];
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+  : defaultOrigins;
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // allow requests with no origin (curl, Postman, server-to-server)
-      if (!origin || allowedOrigins.includes(origin)) {
+      // allow requests with no origin (curl, Postman, server-to-server) or from allowed origins / vercel previews
+      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
         callback(null, true);
       } else {
         callback(new Error(`CORS: origin ${origin} not allowed`));
