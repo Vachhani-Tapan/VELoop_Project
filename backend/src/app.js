@@ -18,24 +18,38 @@ const app = express();
 app.use(helmet());
 
 // ─── CORS ───────────────────────────────────────────────────────────────────
-const defaultOrigins = ['http://localhost:5173', 'https://ve-loop-project.vercel.app'];
-const allowedOrigins = process.env.ALLOWED_ORIGINS
+const defaultOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://ve-loop-project.vercel.app',
+];
+const envOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
-  : defaultOrigins;
+  : [];
+const allowedOrigins = [...new Set([...defaultOrigins, ...envOrigins])];
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // allow requests with no origin (curl, Postman, server-to-server) or from allowed origins / vercel previews
-      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
-        callback(null, true);
-      } else {
-        callback(new Error(`CORS: origin ${origin} not allowed`));
-      }
-    },
-    credentials: true,
-  })
-);
+const corsOptions = {
+  origin: (origin, callback) => {
+    // allow requests with no origin (curl, Postman, server-to-server)
+    if (!origin) return callback(null, true);
+
+    // allow configured origins or any vercel deployment
+    if (
+      allowedOrigins.includes(origin) ||
+      origin.endsWith('.vercel.app') ||
+      origin.includes('localhost')
+    ) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key'],
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // ─── Body parsing ────────────────────────────────────────────────────────────
 app.use(express.json());
