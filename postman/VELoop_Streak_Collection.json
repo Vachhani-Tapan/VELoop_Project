@@ -1,0 +1,88 @@
+{
+  "info": {
+    "name": "VELoop Daily Streak API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"demo@veloop.com\",\n  \"password\": \"Password123!\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{api_url}}/auth/register", "host": ["{{api_url}}"], "path": ["auth", "register"] }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"demo@veloop.com\",\n  \"password\": \"Password123!\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{api_url}}/auth/login", "host": ["{{api_url}}"], "path": ["auth", "login"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Streak",
+      "item": [
+        {
+          "name": "Get Full Summary",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "url": { "raw": "{{api_url}}/daily-streak", "host": ["{{api_url}}"], "path": ["daily-streak"] }
+          }
+        },
+        {
+          "name": "Get Status (Poll)",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "url": { "raw": "{{api_url}}/daily-streak/status", "host": ["{{api_url}}"], "path": ["daily-streak", "status"] }
+          }
+        },
+        {
+          "name": "Claim Reward",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "url": { "raw": "{{api_url}}/daily-streak/claim", "host": ["{{api_url}}"], "path": ["daily-streak", "claim"] }
+          }
+        },
+        {
+          "name": "Get Wallet",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "url": { "raw": "{{api_url}}/daily-streak/wallet", "host": ["{{api_url}}"], "path": ["daily-streak", "wallet"] }
+          }
+        },
+        {
+          "name": "Get History",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "url": { "raw": "{{api_url}}/daily-streak/history?page=1&limit=10", "host": ["{{api_url}}"], "path": ["daily-streak", "history"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }] }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "api_url", "value": "https://veloop-project.onrender.com/api" },
+    { "key": "token", "value": "YOUR_JWT_TOKEN_HERE" }
+  ]
+}
